@@ -6,12 +6,20 @@ using UnityEngine.UI;
 public class StartMenu : MonoBehaviour
 {
     public const string MenuSceneName = "StartMenu";
-    private const string DefaultGameSceneName = "SampleScene";
+    internal const string CutsceneSceneName = "Cutscene";
+    internal const string LevelSelectSceneName = "SampleScene";
+    private const string DefaultStartSceneName = CutsceneSceneName;
     internal const string SavedSceneKey = "MainMenu.LastScene";
     internal const string MusicVolumeKey = "MainMenu.MusicVolume";
     internal const string SfxVolumeKey = "MainMenu.SfxVolume";
 
-    [SerializeField] private string newGameSceneName = DefaultGameSceneName;
+    private const float MenuButtonLeft = 112f;
+    private const float MenuButtonWidth = 500f;
+    private const float MenuButtonHeight = 104f;
+    private const float MenuButtonTopY = 140f;
+    private const float MenuButtonSpacing = 140f;
+
+    [SerializeField] private string newGameSceneName = DefaultStartSceneName;
 
     private Button startButton;
     private Button settingButton;
@@ -23,6 +31,7 @@ public class StartMenu : MonoBehaviour
     {
         builtInFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
         CacheButtons();
+        DisableBackgroundRaycasts();
         ConfigureMenuButtons();
         CreateSettingsPanel();
         ApplyVolumeSettingsToScene();
@@ -55,6 +64,24 @@ public class StartMenu : MonoBehaviour
         }
     }
 
+    /// <summary>
+    /// The menu scene is assembled from several full-screen artwork images.
+    /// They must not swallow clicks meant for the buttons on the left.
+    /// </summary>
+    private void DisableBackgroundRaycasts()
+    {
+        Image[] images = GetComponentsInChildren<Image>(true);
+        foreach (Image image in images)
+        {
+            if (image.GetComponent<Button>() != null)
+            {
+                continue;
+            }
+
+            image.raycastTarget = false;
+        }
+    }
+
     private void BindButtons()
     {
         if (startButton != null)
@@ -78,12 +105,12 @@ public class StartMenu : MonoBehaviour
 
     private void ConfigureMenuButtons()
     {
-        ConfigureMenuButton(startButton, "Start", new Vector2(0f, 80f));
-        ConfigureMenuButton(settingButton, "Setting", new Vector2(0f, -40f));
-        ConfigureMenuButton(loadButton, "Load", new Vector2(0f, -160f));
+        ConfigureMenuButton(startButton, "Start", 0);
+        ConfigureMenuButton(loadButton, "Load", 1);
+        ConfigureMenuButton(settingButton, "Settings", 2);
     }
 
-    private void ConfigureMenuButton(Button button, string label, Vector2 anchoredPosition)
+    private void ConfigureMenuButton(Button button, string label, int verticalIndex)
     {
         if (button == null)
         {
@@ -93,18 +120,21 @@ public class StartMenu : MonoBehaviour
         RectTransform buttonRect = button.transform as RectTransform;
         if (buttonRect != null)
         {
-            buttonRect.anchorMin = new Vector2(0.5f, 0.5f);
-            buttonRect.anchorMax = new Vector2(0.5f, 0.5f);
-            buttonRect.pivot = new Vector2(0.5f, 0.5f);
-            buttonRect.anchoredPosition = anchoredPosition;
-            buttonRect.sizeDelta = new Vector2(420f, 84f);
+            buttonRect.anchorMin = new Vector2(0f, 0.5f);
+            buttonRect.anchorMax = new Vector2(0f, 0.5f);
+            buttonRect.pivot = new Vector2(0f, 0.5f);
+            buttonRect.anchoredPosition = new Vector2(
+                MenuButtonLeft,
+                MenuButtonTopY - verticalIndex * MenuButtonSpacing);
+            buttonRect.sizeDelta = new Vector2(MenuButtonWidth, MenuButtonHeight);
         }
 
         Image buttonImage = button.GetComponent<Image>();
         if (buttonImage != null)
         {
-            buttonImage.color = new Color(0.71f, 0.52f, 0.23f, 0.92f);
+            buttonImage.color = new Color(0.71f, 0.52f, 0.23f, 0.96f);
             buttonImage.type = Image.Type.Sliced;
+            buttonImage.raycastTarget = true;
         }
 
         ColorBlock colors = button.colors;
@@ -112,32 +142,40 @@ public class StartMenu : MonoBehaviour
         colors.highlightedColor = new Color(1f, 0.95f, 0.85f, 1f);
         colors.pressedColor = new Color(0.85f, 0.8f, 0.72f, 1f);
         colors.selectedColor = colors.highlightedColor;
-        colors.disabledColor = new Color(0.75f, 0.75f, 0.75f, 0.75f);
+        colors.disabledColor = new Color(0.75f, 0.75f, 0.75f, 0.6f);
         button.colors = colors;
 
         Text labelText = button.GetComponentInChildren<Text>(true);
         if (labelText == null)
         {
-            labelText = CreateLabel("Text", label, buttonRect, Vector2.zero, 30, FontStyle.Bold);
-            RectTransform labelRect = labelText.rectTransform;
-            labelRect.anchorMin = Vector2.zero;
-            labelRect.anchorMax = Vector2.one;
-            labelRect.offsetMin = Vector2.zero;
-            labelRect.offsetMax = Vector2.zero;
+            labelText = CreateLabel("Text", label, buttonRect, Vector2.zero, 34, FontStyle.Bold);
         }
 
+        RectTransform labelRect = labelText.rectTransform;
+        labelRect.anchorMin = Vector2.zero;
+        labelRect.anchorMax = Vector2.one;
+        labelRect.offsetMin = Vector2.zero;
+        labelRect.offsetMax = Vector2.zero;
+
         labelText.font = builtInFont;
-        labelText.fontSize = 30;
+        labelText.fontSize = 34;
         labelText.fontStyle = FontStyle.Bold;
         labelText.alignment = TextAnchor.MiddleCenter;
         labelText.color = new Color(0.18f, 0.12f, 0.05f, 1f);
         labelText.text = label;
         labelText.raycastTarget = false;
+
+        // The menu artwork contains full-screen photos; keep the buttons on top
+        // so they render above the artwork and receive clicks.
+        button.transform.SetAsLastSibling();
     }
 
     private void StartNewGame()
     {
-        LoadScene(newGameSceneName);
+        string sceneName = string.IsNullOrWhiteSpace(newGameSceneName)
+            ? DefaultStartSceneName
+            : newGameSceneName;
+        LoadScene(sceneName);
     }
 
     private void LoadSavedGame()
@@ -192,6 +230,7 @@ public class StartMenu : MonoBehaviour
         }
 
         settingsPanel.SetActive(true);
+        settingsPanel.transform.SetAsLastSibling();
         EventSystem.current?.SetSelectedGameObject(null);
     }
 
@@ -395,12 +434,19 @@ public class StartMenu : MonoBehaviour
         }
 
         string savedSceneName = PlayerPrefs.GetString(SavedSceneKey, string.Empty);
-        return savedSceneName == MenuSceneName ? string.Empty : savedSceneName;
+        return IsResumableScene(savedSceneName) ? savedSceneName : string.Empty;
+    }
+
+    internal static bool IsResumableScene(string sceneName)
+    {
+        return !string.IsNullOrWhiteSpace(sceneName) &&
+               sceneName != MenuSceneName &&
+               sceneName != CutsceneSceneName;
     }
 
     private static void SaveLastScene(string sceneName)
     {
-        if (string.IsNullOrEmpty(sceneName) || sceneName == MenuSceneName)
+        if (!IsResumableScene(sceneName))
         {
             return;
         }
@@ -467,7 +513,7 @@ public static class SceneResumeBootstrap
 
     private static void OnSceneLoaded(Scene scene, LoadSceneMode loadSceneMode)
     {
-        if (scene.name != StartMenu.MenuSceneName)
+        if (StartMenu.IsResumableScene(scene.name))
         {
             PlayerPrefs.SetString(StartMenu.SavedSceneKey, scene.name);
             PlayerPrefs.Save();

@@ -23,19 +23,21 @@ public class CutsceneController : MonoBehaviour
 
     [SerializeField] private TMP_Text dialogueText;
     [SerializeField] private float fadeDuration = 0.6f;
-    [SerializeField] private string nextSceneName;
+    [SerializeField] private string nextSceneName = LevelProgress.LevelSelectSceneName;
     [SerializeField] private CutsceneStep[] steps = Array.Empty<CutsceneStep>();
 
     private readonly Dictionary<Image, float> imageTargetAlphas = new Dictionary<Image, float>();
     private int currentStepIndex = -1;
     private bool isTransitioning;
     private bool hasFinished;
+    private Text continueHint;
 
     private void Awake()
     {
         AutoAssignReferences();
         CacheImageAlphas();
         HideCutsceneVisuals();
+        CreateContinueHint();
     }
 
     private void Start()
@@ -56,7 +58,9 @@ public class CutsceneController : MonoBehaviour
             return;
         }
 
-        if (!Input.GetMouseButtonDown(0))
+        if (!Input.GetMouseButtonDown(0) &&
+            !Input.GetKeyDown(KeyCode.Space) &&
+            !Input.GetKeyDown(KeyCode.Return))
         {
             return;
         }
@@ -79,6 +83,7 @@ public class CutsceneController : MonoBehaviour
 
         isTransitioning = true;
         currentStepIndex = stepIndex;
+        UpdateContinueHint();
         CutsceneStep step = steps[stepIndex];
 
         if (dialogueText != null && dialogueText.color.a > 0.01f)
@@ -113,18 +118,67 @@ public class CutsceneController : MonoBehaviour
 
         hasFinished = true;
 
-        if (string.IsNullOrWhiteSpace(nextSceneName))
+        string targetScene = string.IsNullOrWhiteSpace(nextSceneName)
+            ? LevelProgress.LevelSelectSceneName
+            : nextSceneName;
+
+        if (string.IsNullOrWhiteSpace(targetScene))
         {
             return;
         }
 
-        if (!Application.CanStreamedLevelBeLoaded(nextSceneName))
+        if (!Application.CanStreamedLevelBeLoaded(targetScene))
         {
-            Debug.LogError($"Scene '{nextSceneName}' is not available in Build Settings.");
+            Debug.LogError($"Scene '{targetScene}' is not available in Build Settings.");
             return;
         }
 
-        SceneManager.LoadScene(nextSceneName);
+        SceneManager.LoadScene(targetScene);
+    }
+
+    private void CreateContinueHint()
+    {
+        Transform existing = transform.Find("ContinueHint");
+        GameObject hintObject = existing != null
+            ? existing.gameObject
+            : new GameObject("ContinueHint", typeof(RectTransform), typeof(Text));
+
+        hintObject.transform.SetParent(transform, false);
+
+        RectTransform hintRect = hintObject.GetComponent<RectTransform>();
+        hintRect.anchorMin = new Vector2(1f, 1f);
+        hintRect.anchorMax = new Vector2(1f, 1f);
+        hintRect.pivot = new Vector2(1f, 1f);
+        hintRect.anchoredPosition = new Vector2(-36f, -28f);
+        hintRect.sizeDelta = new Vector2(420f, 44f);
+
+        continueHint = hintObject.GetComponent<Text>();
+        if (continueHint == null)
+        {
+            continueHint = hintObject.AddComponent<Text>();
+        }
+
+        continueHint.font = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
+        continueHint.fontSize = 24;
+        continueHint.fontStyle = FontStyle.Italic;
+        continueHint.alignment = TextAnchor.MiddleRight;
+        continueHint.color = new Color(0.96f, 0.92f, 0.84f, 0.72f);
+        continueHint.raycastTarget = false;
+        continueHint.text = "Click to continue";
+
+        hintObject.transform.SetAsLastSibling();
+    }
+
+    private void UpdateContinueHint()
+    {
+        if (continueHint == null)
+        {
+            return;
+        }
+
+        continueHint.text = currentStepIndex >= steps.Length - 1
+            ? "Click to finish"
+            : "Click to continue";
     }
 
     private void AutoAssignReferences()

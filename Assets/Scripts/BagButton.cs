@@ -1,36 +1,50 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.UI;
 
+/// <summary>
+/// The clickable level-1 bag on the level-select screen.
+/// While level 1 has not been cleared the green bag art is hidden and the
+/// grey "BagButton1-1" overlay is shown. After level 1 is cleared the overlay
+/// is hidden again so the original green bag (BagButton1) is revealed.
+/// </summary>
 public class BagButton : MonoBehaviour
 {
-    [SerializeField] private Color unlockedColor = new Color(0.74f, 0.55f, 0.27f, 1f);
-    [SerializeField] private Color completedColor = new Color(0.42f, 0.67f, 0.36f, 1f);
-    [SerializeField] private Color lockedColor = new Color(0.4f, 0.4f, 0.4f, 0.95f);
+    [SerializeField] private int levelNumber = 1;
+    [SerializeField] private Image lockedImage;
 
     private Button button;
     private Image buttonImage;
     private GameManager gameManager;
-    private Text titleText;
-    private Text stateText;
-    private Font runtimeFont;
+
+    public int LevelNumber
+    {
+        get { return levelNumber; }
+    }
 
     private void Awake()
     {
         button = GetComponent<Button>();
         buttonImage = GetComponent<Image>();
-        runtimeFont = Resources.GetBuiltinResource<Font>("LegacyRuntime.ttf");
-        EnsureLabels();
+
+        if (lockedImage == null)
+        {
+            lockedImage = FindLockedImage();
+        }
     }
 
     private void Start()
     {
-        Bind(FindFirstObjectByType<GameManager>());
+        gameManager = FindFirstObjectByType<GameManager>();
 
         if (button != null)
         {
             button.onClick.RemoveListener(OnBagClicked);
             button.onClick.AddListener(OnBagClicked);
+            button.interactable = true;
         }
+
+        RefreshView(LevelProgress.IsCompleted(levelNumber));
     }
 
     public void Bind(GameManager manager)
@@ -38,28 +52,27 @@ public class BagButton : MonoBehaviour
         gameManager = manager;
     }
 
-    public void RefreshView(string bagName, bool isUnlocked, bool isCompleted, int displayIndex, int totalCount)
+    /// <summary>
+    /// Shows the grey placeholder until the level is completed, then reveals
+    /// the original green bag art.
+    /// </summary>
+    public void RefreshView(bool isCompleted)
     {
-        EnsureLabels();
-
-        if (titleText != null)
+        if (buttonImage != null)
         {
-            titleText.text = $"{displayIndex + 1}/{totalCount}  {bagName}";
+            Color color = buttonImage.color;
+            color.a = isCompleted ? 1f : 0f;
+            buttonImage.color = color;
         }
 
-        if (stateText != null)
+        if (lockedImage != null)
         {
-            stateText.text = isCompleted ? "Completed" : isUnlocked ? "Unlocked" : "Locked";
+            lockedImage.gameObject.SetActive(!isCompleted);
         }
 
         if (button != null)
         {
-            button.interactable = isUnlocked;
-        }
-
-        if (buttonImage != null)
-        {
-            buttonImage.color = isCompleted ? completedColor : isUnlocked ? unlockedColor : lockedColor;
+            button.interactable = true;
         }
     }
 
@@ -67,51 +80,46 @@ public class BagButton : MonoBehaviour
     {
         if (gameManager != null)
         {
-            gameManager.TryEnterFocusedBag();
+            gameManager.EnterLevel(levelNumber);
+            return;
+        }
+
+        string sceneName = LevelProgress.GetLevelSceneName(levelNumber);
+        if (!string.IsNullOrEmpty(sceneName) && Application.CanStreamedLevelBeLoaded(sceneName))
+        {
+            SceneManager.LoadScene(sceneName);
         }
     }
 
-    private void EnsureLabels()
+    private Image FindLockedImage()
     {
-        if (titleText == null)
+        // The grey placeholder lives next to the bag in the level-select canvas,
+        // but also accept a child so the hierarchy can be reorganized safely.
+        Transform parent = transform.parent;
+        if (parent != null)
         {
-            titleText = CreateLabel("BagTitle", new Vector2(0f, 84f), 34);
+            Transform sibling = parent.Find("BagButton1-1");
+            if (sibling != null)
+            {
+                return sibling.GetComponent<Image>();
+            }
         }
 
-        if (stateText == null)
+        Transform child = transform.Find("BagButton1-1");
+        if (child != null)
         {
-            stateText = CreateLabel("BagState", new Vector2(0f, -88f), 24);
-        }
-    }
-
-    private Text CreateLabel(string objectName, Vector2 anchoredPosition, int fontSize)
-    {
-        Transform existingChild = transform.Find(objectName);
-        GameObject labelObject = existingChild != null
-            ? existingChild.gameObject
-            : new GameObject(objectName, typeof(RectTransform));
-
-        labelObject.transform.SetParent(transform, false);
-
-        RectTransform labelRect = labelObject.GetComponent<RectTransform>();
-        labelRect.anchorMin = new Vector2(0.5f, 0.5f);
-        labelRect.anchorMax = new Vector2(0.5f, 0.5f);
-        labelRect.pivot = new Vector2(0.5f, 0.5f);
-        labelRect.anchoredPosition = anchoredPosition;
-        labelRect.sizeDelta = new Vector2(520f, 60f);
-
-        Text label = labelObject.GetComponent<Text>();
-        if (label == null)
-        {
-            label = labelObject.AddComponent<Text>();
+            return child.GetComponent<Image>();
         }
 
-        label.font = runtimeFont;
-        label.fontSize = fontSize;
-        label.fontStyle = FontStyle.Bold;
-        label.alignment = TextAnchor.MiddleCenter;
-        label.color = new Color(0.16f, 0.11f, 0.05f, 1f);
-        label.raycastTarget = false;
-        return label;
+        Transform[] sceneTransforms = FindObjectsByType<Transform>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        foreach (Transform sceneTransform in sceneTransforms)
+        {
+            if (sceneTransform.name == "BagButton1-1")
+            {
+                return sceneTransform.GetComponent<Image>();
+            }
+        }
+
+        return null;
     }
 }

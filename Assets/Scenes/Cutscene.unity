@@ -266,7 +266,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   dialogueText: {fileID: 524954944}
   fadeDuration: 0.6
-  nextSceneName: 
+  nextSceneName: SampleScene
   steps:
   - dialogue: 'My name is Tian Xiaocan. '
     imagesToFadeIn:
@@ -907,7 +907,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &687034124
 RectTransform:
   m_ObjectHideFlags: 0
@@ -1644,7 +1644,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1249851731
 RectTransform:
   m_ObjectHideFlags: 0
@@ -2012,7 +2012,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1565295036
 RectTransform:
   m_ObjectHideFlags: 0
@@ -2387,7 +2387,7 @@ GameObject:
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
-  m_IsActive: 1
+  m_IsActive: 0
 --- !u!224 &1819246440
 RectTransform:
   m_ObjectHideFlags: 0
