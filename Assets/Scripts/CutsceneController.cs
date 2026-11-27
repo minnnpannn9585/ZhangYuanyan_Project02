@@ -133,7 +133,7 @@ public class CutsceneController : MonoBehaviour
             return;
         }
 
-        SceneManager.LoadScene(targetScene);
+        SceneFade.LoadScene(targetScene);
     }
 
     private void CreateContinueHint()
