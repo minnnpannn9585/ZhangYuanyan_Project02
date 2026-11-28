@@ -10,12 +10,12 @@ public class GameManager : MonoBehaviour
 {
     [Header("Level Select")]
     [SerializeField] private GameObject levelSelectCanvas;
-    [SerializeField] private BagButton bagButton;
     [SerializeField] private TransitionImage transitionImage;
 
     [Header("Scenes")]
     [SerializeField] private string level1SceneName = LevelProgress.Level1SceneName;
 
+    private BagCarousel bagCarousel;
     private bool isLeavingLevelSelect;
 
     private void Awake()
@@ -25,30 +25,33 @@ public class GameManager : MonoBehaviour
             levelSelectCanvas = FindSceneObject("LevelSelectCanvas");
         }
 
-        if (bagButton == null)
-        {
-            bagButton = FindFirstObjectByType<BagButton>(FindObjectsInactive.Include);
-        }
-
         if (transitionImage == null)
         {
             transitionImage = FindFirstObjectByType<TransitionImage>(FindObjectsInactive.Include);
         }
 
-        if (bagButton != null)
-        {
-            bagButton.Bind(this);
-        }
-
         if (levelSelectCanvas != null)
         {
             levelSelectCanvas.SetActive(true);
+
+            bagCarousel = levelSelectCanvas.GetComponent<BagCarousel>();
+            if (bagCarousel == null)
+            {
+                bagCarousel = levelSelectCanvas.AddComponent<BagCarousel>();
+            }
+
+            bagCarousel.Initialize(this);
         }
     }
 
     private void Start()
     {
         RefreshLevelSelect();
+
+        if (bagCarousel != null)
+        {
+            bagCarousel.BeginIntroIfNeeded();
+        }
     }
 
     public void RefreshLevelSelect()
@@ -58,9 +61,9 @@ public class GameManager : MonoBehaviour
             levelSelectCanvas.SetActive(true);
         }
 
-        if (bagButton != null)
+        if (bagCarousel != null)
         {
-            bagButton.RefreshView(LevelProgress.IsCompleted(bagButton.LevelNumber));
+            bagCarousel.Refresh();
         }
     }
 

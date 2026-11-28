@@ -5,10 +5,11 @@ using UnityEngine.UI;
 
 /// <summary>
 /// Minimal GameScene controller for the current vertical slice.
-/// It exposes a temporary "Complete Level" button so clearing level 1 can be
-/// tested end-to-end. The real level-complete condition can call
-/// <see cref="CompleteLevelAndReturn"/> when it is implemented.
-/// Escape returns to the level-select screen without marking the level cleared.
+/// It exposes a temporary return button. The real level-complete condition is
+/// still undefined, so that button deliberately does NOT mark level 1 cleared;
+/// it only returns to the level-select screen. When the real condition exists,
+/// call <see cref="CompleteLevelAndReturn"/> from it.
+/// Escape also returns without marking the level cleared.
 /// </summary>
 public class LevelSceneController : MonoBehaviour
 {
@@ -45,6 +46,15 @@ public class LevelSceneController : MonoBehaviour
     public void CompleteLevelAndReturn()
     {
         ReturnToLevelSelect(true);
+    }
+
+    /// <summary>
+    /// Temporary button path: return to the level select without granting a
+    /// clear, because level 1's real success condition is not implemented yet.
+    /// </summary>
+    public void ReturnToLevelSelectWithoutCompleting()
+    {
+        ReturnToLevelSelect(false);
     }
 
     public void OpenAlbum()
@@ -366,8 +376,8 @@ public class LevelSceneController : MonoBehaviour
         colors.selectedColor = colors.highlightedColor;
         completeButton.colors = colors;
         completeButton.targetGraphic = buttonImage;
-        completeButton.onClick.RemoveListener(CompleteLevelAndReturn);
-        completeButton.onClick.AddListener(CompleteLevelAndReturn);
+        completeButton.onClick.RemoveAllListeners();
+        completeButton.onClick.AddListener(ReturnToLevelSelectWithoutCompleting);
 
         Transform labelTransform = buttonRect.Find("Text");
         GameObject labelObject;

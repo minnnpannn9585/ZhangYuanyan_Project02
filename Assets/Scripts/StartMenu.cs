@@ -172,6 +172,8 @@ public class StartMenu : MonoBehaviour
 
     private void StartNewGame()
     {
+        LevelProgress.ResetBag1Intro();
+
         string sceneName = string.IsNullOrWhiteSpace(newGameSceneName)
             ? DefaultStartSceneName
             : newGameSceneName;

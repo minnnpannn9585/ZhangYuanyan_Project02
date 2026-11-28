@@ -11,6 +11,7 @@ public static class LevelProgress
 
     private const string CompletedKeyPrefix = "Progress.Level";
     private const string CompletedKeySuffix = ".Completed";
+    private const string Bag1IntroKey = "Progress.Bag1IntroPlayed";
     private const int HighestSupportedLevel = 50;
 
     public static bool IsCompleted(int levelNumber)
@@ -42,6 +43,23 @@ public static class LevelProgress
     public static void MarkLevel1Completed()
     {
         MarkCompleted(1);
+    }
+
+    public static bool IsBag1IntroPlayed
+    {
+        get { return PlayerPrefs.GetInt(Bag1IntroKey, 0) == 1; }
+    }
+
+    public static void MarkBag1IntroPlayed()
+    {
+        PlayerPrefs.SetInt(Bag1IntroKey, 1);
+        PlayerPrefs.Save();
+    }
+
+    public static void ResetBag1Intro()
+    {
+        PlayerPrefs.DeleteKey(Bag1IntroKey);
+        PlayerPrefs.Save();
     }
 
     public static void ResetLevel(int levelNumber)
